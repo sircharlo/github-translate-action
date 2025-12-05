@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import franc from 'franc-min';
+import { franc } from 'franc-min';
 
 export function isEnglish(body: string | null): boolean | true {
   if (body === null) {

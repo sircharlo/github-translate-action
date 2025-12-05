@@ -945,18 +945,15 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isEnglish = isEnglish;
 const core = __importStar(__nccwpck_require__(7484));
-const franc_min_1 = __importDefault(__nccwpck_require__(5187));
+const franc_min_1 = __nccwpck_require__(5187);
 function isEnglish(body) {
     if (body === null) {
         return true;
     }
-    const detectResult = (0, franc_min_1.default)(body);
+    const detectResult = (0, franc_min_1.franc)(body);
     if (detectResult === 'und' ||
         detectResult === undefined ||
         detectResult === null) {
