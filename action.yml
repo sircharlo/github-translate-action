@@ -3,14 +3,16 @@ description: 'Translate non-English GitHub issues and GitHub discussions into En
 branding:
   icon: 'repeat'
   color: 'purple'
-author: 'lizheming'
+author: 'sircharlo'
 inputs:
-  IS_MODIFY_TITLE: 
+  IS_MODIFY_TITLE:
     description: 'Is need modify issue title, true or false, default false.'
   APPEND_TRANSLATION:
     description: 'append translation content into issue instead of create new translation issue.'
   CUSTOM_BOT_NOTE:
     description: 'Custom bot note message.'
+  SKIP_ACTORS:
+    description: 'Comma-separated list of actor usernames to skip translation for (e.g., "dependabot[bot],renovate[bot]").'
 runs:
   using: 'node16'
   main: 'dist/index.js'
