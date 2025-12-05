@@ -9,6 +9,20 @@ const TRANSLATE_DIVIDING_LINE = `<!--This is a translation content dividing line
 const DEFAULT_BOT_MESSAGE = `Bot detected the issue body's language is not English, translate it automatically. 👯👭🏻🧑‍🤝‍🧑👫🧑🏿‍🤝‍🧑🏻👩🏾‍🤝‍👨🏿👬🏿`;
 const DEFAULT_BOT_TOKEN = process.env.GITHUB_TOKEN;
 
+/**
+ * Strips quoted lines (markdown quotes starting with "> ") from the content
+ * to avoid re-translating quoted text from previous comments
+ */
+function stripQuotedLines(content: string | undefined): string | undefined {
+  if (!content) return content;
+
+  return content
+    .split('\n')
+    .filter((line) => !line.trimStart().startsWith('>'))
+    .join('\n')
+    .trim();
+}
+
 async function main(): Promise<void> {
   core.info(JSON.stringify(github.context));
 
@@ -59,7 +73,10 @@ async function main(): Promise<void> {
 
   const octokit = github.getOctokit(botToken);
   const originTitle = title?.split(TRANSLATE_TITLE_DIVING)?.[0];
-  const originComment = body?.split(TRANSLATE_DIVIDING_LINE)?.[0];
+  let originComment = body?.split(TRANSLATE_DIVIDING_LINE)?.[0];
+
+  // Strip quoted lines to avoid re-translating quoted content
+  originComment = stripQuotedLines(originComment);
 
   const translateOrigin = translateText.stringify(originComment, originTitle);
   if (!translateOrigin) {
