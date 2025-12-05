@@ -2,9 +2,19 @@
 
 ![Logo](./assets/logo.svg)
 
-En | [中文](./README_CN.md)
+> **Note:** This is a fork of [lizheming/github-translate-action](https://github.com/lizheming/github-translate-action) with improvements and additional features. All credit for the original code goes to the original author.
 
-A GitHub Action to translate non-English GitHub issues and GitHub discussions into English automatically.
+A GitHub Action to automatically translate non-English GitHub issues, discussions, and comments into English.
+
+## Improvements Over Original
+
+This fork includes several enhancements:
+
+- **Skip Actors**: Ability to exclude specific users/bots from translation
+- **Quote Stripping**: Automatically removes quoted text to avoid re-translating previous comments
+- **Improved Bot Messages**: More user-friendly default translation notices
+- **Code Refactoring**: Cleaner, more maintainable codebase
+- **Updated Dependencies**: Uses Node 20 and latest packages
 
 ## Input variables
 
@@ -51,13 +61,8 @@ jobs:
           SKIP_ACTORS: 'dependabot[bot],mergify[bot]'
 ````
 
-## Thanks
+## Credits
 
-This project is forked from [dromara/issues-translate-action](https://github.com/dromara/issues-translate-action), thanks to the original author for his work. Due to the large modification of the upstream project, such as:
+This project is a fork of [lizheming/github-translate-action](https://github.com/lizheming/github-translate-action). All credit for the original implementation goes to [@lizheming](https://github.com/lizheming).
 
-- Add translation support for GitHub discussion and pull request
-- Added non-intrusive translation actions for additional translation content
-- Replace custom GitHub Token process with GitHub Action Token
-- Refactored project
-
-It is almost equivalent to a new project, so there is no consideration of merging the changes upstream and using it as a separate project.
+The original project was itself forked from [dromara/issues-translate-action](https://github.com/dromara/issues-translate-action).

@@ -1,18 +1,18 @@
-name: 'GitHub Translator'
-description: 'Translate non-English GitHub issues and GitHub discussions into English automatically.'
+name: 'Auto-Translator'
+description: 'Automatically translate non-English GitHub issues, discussions, and comments into English.'
 branding:
   icon: 'repeat'
   color: 'purple'
 author: 'sircharlo'
 inputs:
   IS_MODIFY_TITLE:
-    description: 'Is need modify issue title, true or false, default false.'
+    description: 'Whether to modify the original title with the translation. Set to "true" to enable. Default: false.'
   APPEND_TRANSLATION:
-    description: 'append translation content into issue instead of create new translation issue.'
+    description: 'Whether to append the translation to the original content instead of posting as a separate comment. Set to "true" to enable. Default: false.'
   CUSTOM_BOT_NOTE:
-    description: 'Custom bot note message.'
+    description: 'Custom message to display with the translation. If not provided, a default message will be used.'
   SKIP_ACTORS:
-    description: 'Comma-separated list of actor usernames to skip translation for (e.g., "dependabot[bot],renovate[bot]").'
+    description: 'Comma-separated list of GitHub usernames to skip translation for (e.g., "dependabot[bot],renovate[bot]"). Useful for excluding bots.'
 runs:
   using: 'node20'
   main: 'dist/index.js'
