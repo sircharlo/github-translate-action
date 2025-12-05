@@ -14,5 +14,5 @@ inputs:
   SKIP_ACTORS:
     description: 'Comma-separated list of actor usernames to skip translation for (e.g., "dependabot[bot],renovate[bot]").'
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
