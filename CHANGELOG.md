@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.3] - 2025-12-05
+
+### Added
+
+- Smart retranslation prevention
+  - Detects if title already contains "Original title:" and skips retranslating the title
+  - Body translation still proceeds even when title is already translated
+  - Saves API costs by avoiding unnecessary title retranslation
+  - Logs when title retranslation is skipped for visibility
+- Edit detection and handling
+  - Detects when an issue/comment body has been edited (contains botNote)
+  - Automatically strips previous translation content (everything after `TRANSLATION_DIVIDER`)
+  - Retranslates the edited original content
+  - Logs when edit is detected for visibility
+
 ## [1.0.2] - 2025-12-05
 
 ### Added
