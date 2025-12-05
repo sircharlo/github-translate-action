@@ -101,7 +101,7 @@ function formatTitleWithTags(originalTitle, translatedTitle) {
 }
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
         core.info(JSON.stringify(github.context));
         if (!BOT_TOKEN) {
             return core.setFailed(`GITHUB_TOKEN is required!`);
@@ -110,13 +110,14 @@ function main() {
         const appendTranslation = core.getInput('APPEND_TRANSLATION') === 'true';
         const botNote = ((_a = core.getInput('CUSTOM_BOT_NOTE')) === null || _a === void 0 ? void 0 : _a.trim()) || DEFAULT_BOT_MESSAGE;
         const skipActorsInput = (_b = core.getInput('SKIP_ACTORS')) === null || _b === void 0 ? void 0 : _b.trim();
+        const sectionsToSkipInput = (_c = core.getInput('SECTIONS_TO_SKIP')) === null || _c === void 0 ? void 0 : _c.trim();
         const { payload: { issue, discussion, pull_request, comment }, } = github.context;
         /**
          * Skip translation for selected users
          */
         if (skipActorsInput) {
             const skipList = skipActorsInput.split(',').map((a) => a.trim());
-            const author = (_h = (_f = (_d = (_c = comment === null || comment === void 0 ? void 0 : comment.user) === null || _c === void 0 ? void 0 : _c.login) !== null && _d !== void 0 ? _d : (_e = issue === null || issue === void 0 ? void 0 : issue.user) === null || _e === void 0 ? void 0 : _e.login) !== null && _f !== void 0 ? _f : (_g = discussion === null || discussion === void 0 ? void 0 : discussion.user) === null || _g === void 0 ? void 0 : _g.login) !== null && _h !== void 0 ? _h : (_j = pull_request === null || pull_request === void 0 ? void 0 : pull_request.user) === null || _j === void 0 ? void 0 : _j.login;
+            const author = (_j = (_g = (_e = (_d = comment === null || comment === void 0 ? void 0 : comment.user) === null || _d === void 0 ? void 0 : _d.login) !== null && _e !== void 0 ? _e : (_f = issue === null || issue === void 0 ? void 0 : issue.user) === null || _f === void 0 ? void 0 : _f.login) !== null && _g !== void 0 ? _g : (_h = discussion === null || discussion === void 0 ? void 0 : discussion.user) === null || _h === void 0 ? void 0 : _h.login) !== null && _j !== void 0 ? _j : (_k = pull_request === null || pull_request === void 0 ? void 0 : pull_request.user) === null || _k === void 0 ? void 0 : _k.login;
             if (author && skipList.includes(author)) {
                 return core.info(`Skipping translation for author: ${author}`);
             }
@@ -136,15 +137,24 @@ function main() {
         let originalBodyWithQuotes = body;
         if (body && body.includes(botNote)) {
             core.info('Body contains botNote - this appears to be an edit. Stripping translation content to retranslate.');
-            originalBodyWithQuotes = (_k = body.split(TRANSLATION_DIVIDER)) === null || _k === void 0 ? void 0 : _k[0];
+            originalBodyWithQuotes = (_l = body.split(TRANSLATION_DIVIDER)) === null || _l === void 0 ? void 0 : _l[0];
         }
         else {
-            originalBodyWithQuotes = (_l = body === null || body === void 0 ? void 0 : body.split(TRANSLATION_DIVIDER)) === null || _l === void 0 ? void 0 : _l[0];
+            originalBodyWithQuotes = (_m = body === null || body === void 0 ? void 0 : body.split(TRANSLATION_DIVIDER)) === null || _m === void 0 ? void 0 : _m[0];
         }
         // Extract tags from title for separate handling
         const { titleWithoutTags: originalTitleWithoutTags } = extractTitleTags(originalTitle);
         // Remove quoted text for translation (to avoid re-translating old comments)
-        const originalBodyForTranslation = stripQuotedLines(originalBodyWithQuotes);
+        const bodyWithoutQuotes = stripQuotedLines(originalBodyWithQuotes);
+        // Filter out sections that should not be translated
+        const sectionsToSkip = sectionsToSkipInput
+            ? sectionsToSkipInput.split(',').map((s) => s.trim())
+            : [];
+        const { filteredContent: originalBodyForTranslation, skippedSections } = (0, utils_1.filterMarkdownSections)(bodyWithoutQuotes, sectionsToSkip);
+        if (sectionsToSkip.length > 0) {
+            core.info(`Skipping translation for sections: ${sectionsToSkip.join(', ')}`);
+            core.info(`Found ${skippedSections.size} section(s) to skip`);
+        }
         // Translate only the title without tags (unless already translated)
         const textToTranslate = translate_1.translateText.stringify(originalBodyForTranslation, titleAlreadyTranslated ? undefined : originalTitleWithoutTags);
         if (!textToTranslate)
@@ -156,6 +166,11 @@ function main() {
         }
         core.info(`Translated result: ${translated}`);
         let [translatedBody, translatedTitle] = translate_1.translateText.parse(translated);
+        // Fix markdown heading spacing and restore skipped sections
+        if (translatedBody) {
+            translatedBody = (0, utils_1.fixMarkdownHeadingSpacing)(translatedBody);
+            translatedBody = (0, utils_1.restoreSkippedSections)(translatedBody, skippedSections);
+        }
         /**
          * Mode 1 — Append translation to the original content
          */
@@ -165,12 +180,16 @@ function main() {
                 translatedTitle !== originalTitleWithoutTags &&
                 originalTitle &&
                 formatTitleWithTags(originalTitle, translatedTitle);
+            const formattedBotNote = botNote
+                .split('\n')
+                .map((line) => `###### ${line}`)
+                .join('\n');
             const finalBody = translatedBody &&
                 translatedBody !== originalBodyForTranslation &&
                 `${originalBodyWithQuotes}
 ${TRANSLATION_DIVIDER}
 ---
-###### ${botNote}
+${formattedBotNote}
 
 ${translatedBody}
 `;
@@ -948,11 +967,15 @@ function createIssueComment(_a) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.updateIssue = exports.translate = exports.isEnglish = exports.createIssueComment = void 0;
+exports.updateIssue = exports.translate = exports.fixMarkdownHeadingSpacing = exports.restoreSkippedSections = exports.filterMarkdownSections = exports.isEnglish = exports.createIssueComment = void 0;
 var createIssueComment_1 = __nccwpck_require__(2171);
 Object.defineProperty(exports, "createIssueComment", ({ enumerable: true, get: function () { return createIssueComment_1.createIssueComment; } }));
 var isEnglish_1 = __nccwpck_require__(1186);
 Object.defineProperty(exports, "isEnglish", ({ enumerable: true, get: function () { return isEnglish_1.isEnglish; } }));
+var markdownSections_1 = __nccwpck_require__(6309);
+Object.defineProperty(exports, "filterMarkdownSections", ({ enumerable: true, get: function () { return markdownSections_1.filterMarkdownSections; } }));
+Object.defineProperty(exports, "restoreSkippedSections", ({ enumerable: true, get: function () { return markdownSections_1.restoreSkippedSections; } }));
+Object.defineProperty(exports, "fixMarkdownHeadingSpacing", ({ enumerable: true, get: function () { return markdownSections_1.fixMarkdownHeadingSpacing; } }));
 var translate_1 = __nccwpck_require__(3372);
 Object.defineProperty(exports, "translate", ({ enumerable: true, get: function () { return translate_1.translate; } }));
 var updateIssue_1 = __nccwpck_require__(1486);
@@ -1016,6 +1039,107 @@ function isEnglish(body) {
     }
     core.info(`Detect comment body language result is: ${detectResult}`);
     return detectResult === 'eng';
+}
+
+
+/***/ }),
+
+/***/ 6309:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.filterMarkdownSections = filterMarkdownSections;
+exports.restoreSkippedSections = restoreSkippedSections;
+exports.fixMarkdownHeadingSpacing = fixMarkdownHeadingSpacing;
+/**
+ * Filters out specified markdown sections from the content.
+ * Also fixes markdown heading spacing (e.g., "###Heading" -> "### Heading")
+ *
+ * @param content - The markdown content to process
+ * @param sectionsToSkip - Array of section heading names to skip (case-insensitive)
+ * @returns Object containing filtered content and skipped sections for later restoration
+ */
+function filterMarkdownSections(content, sectionsToSkip) {
+    if (!content || sectionsToSkip.length === 0) {
+        return {
+            filteredContent: fixMarkdownHeadingSpacing(content || ''),
+            skippedSections: new Map(),
+        };
+    }
+    const lines = content.split('\n');
+    const result = [];
+    const skippedSections = new Map();
+    let currentSection = null;
+    let skipCurrentSection = false;
+    let sectionContent = [];
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const headingMatch = line.match(/^(#{1,6})\s*(.+)$/);
+        if (headingMatch) {
+            // Save previous section if we were skipping it
+            if (skipCurrentSection && currentSection) {
+                skippedSections.set(currentSection, sectionContent.join('\n'));
+                sectionContent = [];
+            }
+            const hashes = headingMatch[1];
+            const headingText = headingMatch[2].trim();
+            // Check if this heading should be skipped
+            skipCurrentSection = sectionsToSkip.some((skip) => skip.trim().toLowerCase() === headingText.toLowerCase());
+            currentSection = headingText;
+            if (skipCurrentSection) {
+                // Store the heading line with proper spacing
+                sectionContent.push(`${hashes} ${headingText}`);
+            }
+            else {
+                // Add previous section content if we weren't skipping
+                result.push(`${hashes} ${headingText}`);
+            }
+        }
+        else {
+            // Regular content line
+            if (skipCurrentSection) {
+                sectionContent.push(line);
+            }
+            else {
+                result.push(line);
+            }
+        }
+    }
+    // Save the last section if we were skipping it
+    if (skipCurrentSection && currentSection) {
+        skippedSections.set(currentSection, sectionContent.join('\n'));
+    }
+    return {
+        filteredContent: result.join('\n').trim(),
+        skippedSections,
+    };
+}
+/**
+ * Restores skipped sections to the translated content.
+ *
+ * @param translatedContent - The translated markdown content
+ * @param skippedSections - Map of section names to their original content
+ * @returns Content with skipped sections restored
+ */
+function restoreSkippedSections(translatedContent, skippedSections) {
+    if (skippedSections.size === 0) {
+        return translatedContent;
+    }
+    // Simply append all skipped sections at the end
+    const skippedContent = Array.from(skippedSections.values()).join('\n\n');
+    return `${translatedContent}\n\n${skippedContent}`.trim();
+}
+/**
+ * Fixes markdown heading spacing issues.
+ * Converts "###Heading" to "### Heading"
+ *
+ * @param content - The markdown content to fix
+ * @returns Content with properly spaced headings
+ */
+function fixMarkdownHeadingSpacing(content) {
+    return content.replace(/^(#{1,6})([^\s#])/gm, '$1 $2');
 }
 
 

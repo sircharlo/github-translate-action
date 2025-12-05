@@ -11,7 +11,9 @@ A GitHub Action to automatically translate non-English GitHub issues, discussion
 This fork includes several enhancements:
 
 - **Skip Actors**: Ability to exclude specific users/bots from translation
+- **Skip Sections**: Ability to exclude specific markdown sections from translation (e.g., "Confirmations", "Screenshots")
 - **Quote Stripping**: Automatically removes quoted text to avoid re-translating previous comments
+- **Markdown Heading Fix**: Automatically fixes markdown heading spacing issues (e.g., `###Heading` → `### Heading`)
 - **Improved Bot Messages**: More user-friendly default translation notices
 - **Code Refactoring**: Cleaner, more maintainable codebase
 - **Updated Dependencies**: Uses Node 20 and latest packages
@@ -24,6 +26,7 @@ See [action.yml](./action.yml) for more details.
 - `APPEND_TRANSLATION`: whether to append translation content, the default is no. By default, this Action will append the translated content as a new reply to the issue/discussion. When this item is true, the original content is modified and the translation result is appended, so that no notification is generated and the user is not disturbed.
 - `CUSTOM_BOT_NOTE`: When `APPEND_TRANSLATION` is false, a machine translation description tag will be added to the translated content, and you can customize this description.
 - `SKIP_ACTORS`: A comma-separated list of GitHub usernames to skip translation for. Useful for excluding bots like `dependabot[bot]` or `mergify[bot]` from translation. Example: `'dependabot[bot],renovate[bot]'`
+- `SECTIONS_TO_SKIP`: A comma-separated list of markdown section headings to exclude from translation. Content under these headings will not be translated. Useful for sections like "Confirmations", "Screenshots", "Relevant log output", etc. Example: `'Confirmations,Screenshots,Relevant log output'`
 
 ## Usage
 
@@ -58,6 +61,7 @@ jobs:
           IS_MODIFY_TITLE: true
           APPEND_TRANSLATION: true
           SKIP_ACTORS: 'dependabot[bot],mergify[bot]'
+          SECTIONS_TO_SKIP: 'Confirmations,Screenshots,Relevant log output'
 ````
 
 ## Credits

@@ -13,6 +13,8 @@ inputs:
     description: 'Custom message to display with the translation. If not provided, a default message will be used.'
   SKIP_ACTORS:
     description: 'Comma-separated list of GitHub usernames to skip translation for (e.g., "dependabot[bot],renovate[bot]"). Useful for excluding bots.'
+  SECTIONS_TO_SKIP:
+    description: 'Comma-separated list of markdown section headings to skip translation for (e.g., "Confirmations,Relevant log output,Screenshots"). Content under these headings will not be translated.'
 runs:
   using: 'node20'
   main: 'dist/index.js'

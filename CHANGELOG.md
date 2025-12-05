@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.4] - 2025-12-05
+
+### Added
+
+- Section filtering feature
+  - New `SECTIONS_TO_SKIP` input parameter to exclude specific markdown sections from translation
+  - Accepts comma-separated list of heading names (case-insensitive)
+  - Useful for skipping sections like "Confirmations", "Screenshots", "Relevant log output", etc.
+  - Skipped sections are preserved in their original language and appended after translation
+  - Logs which sections are being skipped for visibility
+
+### Fixed
+
+- Markdown heading spacing issues
+  - Automatically fixes malformed headings (e.g., `###Heading` → `### Heading`)
+  - Applied to both filtered content and translated output
+  - Ensures proper markdown rendering in GitHub
+- Multi-line bot note formatting
+  - Bot notes with multiple lines are now properly formatted with `######` prefix on each line
+  - Improves readability of custom bot messages
+
 ## [1.0.3] - 2025-12-05
 
 ### Added

@@ -1,6 +1,12 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { createIssueComment, translate } from './utils';
+import {
+  createIssueComment,
+  filterMarkdownSections,
+  fixMarkdownHeadingSpacing,
+  restoreSkippedSections,
+  translate,
+} from './utils';
 import getModel from './modes';
 import { translateText } from './utils/translate';
 
@@ -80,6 +86,7 @@ async function main(): Promise<void> {
   const botNote =
     core.getInput('CUSTOM_BOT_NOTE')?.trim() || DEFAULT_BOT_MESSAGE;
   const skipActorsInput = core.getInput('SKIP_ACTORS')?.trim();
+  const sectionsToSkipInput = core.getInput('SECTIONS_TO_SKIP')?.trim();
 
   const {
     payload: { issue, discussion, pull_request, comment },
@@ -134,7 +141,22 @@ async function main(): Promise<void> {
     extractTitleTags(originalTitle);
 
   // Remove quoted text for translation (to avoid re-translating old comments)
-  const originalBodyForTranslation = stripQuotedLines(originalBodyWithQuotes);
+  const bodyWithoutQuotes = stripQuotedLines(originalBodyWithQuotes);
+
+  // Filter out sections that should not be translated
+  const sectionsToSkip = sectionsToSkipInput
+    ? sectionsToSkipInput.split(',').map((s) => s.trim())
+    : [];
+
+  const { filteredContent: originalBodyForTranslation, skippedSections } =
+    filterMarkdownSections(bodyWithoutQuotes, sectionsToSkip);
+
+  if (sectionsToSkip.length > 0) {
+    core.info(
+      `Skipping translation for sections: ${sectionsToSkip.join(', ')}`,
+    );
+    core.info(`Found ${skippedSections.size} section(s) to skip`);
+  }
 
   // Translate only the title without tags (unless already translated)
   const textToTranslate = translateText.stringify(
@@ -154,6 +176,12 @@ async function main(): Promise<void> {
 
   let [translatedBody, translatedTitle] = translateText.parse(translated);
 
+  // Fix markdown heading spacing and restore skipped sections
+  if (translatedBody) {
+    translatedBody = fixMarkdownHeadingSpacing(translatedBody);
+    translatedBody = restoreSkippedSections(translatedBody, skippedSections);
+  }
+
   /**
    * Mode 1 — Append translation to the original content
    */
@@ -165,13 +193,18 @@ async function main(): Promise<void> {
       originalTitle &&
       formatTitleWithTags(originalTitle, translatedTitle);
 
+    const formattedBotNote = botNote
+      .split('\n')
+      .map((line) => `###### ${line}`)
+      .join('\n');
+
     const finalBody =
       translatedBody &&
       translatedBody !== originalBodyForTranslation &&
       `${originalBodyWithQuotes}
 ${TRANSLATION_DIVIDER}
 ---
-###### ${botNote}
+${formattedBotNote}
 
 ${translatedBody}
 `;
